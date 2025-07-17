@@ -1,3 +1,4 @@
+
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { useTheme } from "../../components/ThemeContext";
@@ -8,60 +9,16 @@ import Sidebar from "../../components/sidebar.jsx";
 export default function Profile() {
     const { theme } = useTheme();
     const navigate = useNavigate();
-    const [user, setUser] = useState({ 
-        name: "", 
-        email: "", 
-        about: ""
+    const [user, setUser] = useState({
+        name: "Demo User",
+        email: "demo@example.com",
+        about: "I love music!"
     });
-    const [loading, setLoading] = useState(true);
     const [error, setError] = useState("");
     const [newPassword, setNewPassword] = useState("");
     const [confirmPassword, setConfirmPassword] = useState("");
     const [image, setImage] = useState(null);
     const [imagePreview, setImagePreview] = useState(null);
-
-    useEffect(() => {
-        const fetchProfile = async () => {
-            try {
-                const token = localStorage.getItem("token");
-                if (!token) {
-                    console.warn("No token found, redirecting to login.");
-                    navigate("/login");
-                    return;
-                }
-
-                const response = await fetch("https://localhost:3000/api/auth/profile", {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
-
-                if (!response.ok) {
-                    const errorData = await response.json();
-                    console.error("Error fetching profile:", errorData);
-                    throw new Error(errorData.message || "Failed to fetch profile");
-                }
-
-                const data = await response.json();
-                setUser({
-                    name: data.name || "",
-                    email: data.email || "",
-                    about: data.about || ""
-                });
-                if (data.profilePicture) {
-                    setImagePreview(`https://localhost:3000/${data.profilePicture}`);
-                }
-            } catch (error) {
-                setError("Error fetching profile");
-            } finally {
-                setLoading(false);
-            }
-        };
-
-        fetchProfile();
-    }, [navigate]);
 
     useEffect(() => {
         if (image) {
@@ -78,7 +35,7 @@ export default function Profile() {
         }
     };
 
-    const handlePasswordChange = async () => {
+    const handlePasswordChange = () => {
         if (!newPassword || !confirmPassword) {
             toast.error("Please fill in all password fields", {
                 position: "top-right",
@@ -91,93 +48,31 @@ export default function Profile() {
             return;
         }
 
-        const token = localStorage.getItem("token");
-        if (!token) {
-            navigate("/login");
-            return;
-        }
-
-        const formData = new FormData();
-        formData.append("newPassword", newPassword);
-
-        try {
-            const response = await fetch("https://localhost:3000/api/auth/update-profile", {
-                method: "PUT",
-                headers: { Authorization: `Bearer ${token}` },
-                body: formData,
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Failed to update password");
-            }
-
-            toast.success("Password updated successfully!", {
-                position: "top-right",
-                autoClose: 500,
-                onClose: () => navigate("/dashboard")
-            });
-            setNewPassword("");
-            setConfirmPassword("");
-            setError("");
-        } catch (err) {
-            setError(err.message || "Error updating password");
-        }
+        // Mock password update
+        toast.success("Password updated successfully! (Demo)", {
+            position: "top-right",
+            autoClose: 1500,
+        });
+        setNewPassword("");
+        setConfirmPassword("");
+        setError("");
     };
 
-    const handleUpdate = async (e) => {
+    const handleUpdate = (e) => {
         e.preventDefault();
         setError("");
 
-        const token = localStorage.getItem("token");
-        if (!token) {
-            navigate("/login");
+        if (!user.name || !user.email) {
+            setError("Name and email are required!");
             return;
         }
 
-        const formData = new FormData();
-        formData.append("name", user.name);
-        formData.append("email", user.email);
-        formData.append("about", user.about);
-        if (image) formData.append("profilePicture", image);
-
-        try {
-            const response = await fetch("https://localhost:3000/api/auth/update-profile", {
-                method: "PUT",
-                headers: { Authorization: `Bearer ${token}` },
-                body: formData,
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Failed to update profile");
-            }
-
-            const data = await response.json();
-            toast.success("Profile updated successfully!", {
-                position: "top-right",
-                autoClose: 500,
-                onClose: () => navigate("/dashboard")
-            });
-            setUser({
-                name: data.name || "",
-                email: data.email || "",
-                about: data.about || ""
-            });
-            setImage(null);
-            setImagePreview(data.profilePicture ? `https://localhost:3000/${data.profilePicture}` : null);
-        } catch (err) {
-            setError(err.message || "Error updating profile");
-        }
+        // Mock profile update
+        toast.success("Profile updated successfully! (Demo)", {
+            position: "top-right",
+            autoClose: 1500,
+        });
     };
-
-    if (loading) {
-        return (
-            <div className="min-h-screen bg-gradient-to-br from-purple-100 dark:from-gray-900 via-purple-900 to-gray-800 flex items-center justify-center">
-                <p className="text-white text-xl">Loading...</p>
-            </div>
-        );
-    }
 
     return (
         <div className={`flex flex-col min-h-screen ${theme === "light" ? "bg-gradient-to-br from-purple-100 via-blue-100 to-pink-100" : "bg-gradient-to-br from-gray-900 via-purple-900 to-gray-800"}`}>

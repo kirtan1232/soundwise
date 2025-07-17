@@ -1,41 +1,24 @@
-import { useState, useEffect,useMemo } from "react";
+import { useState, useMemo } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
-import { faUser, faLock, faEye, faEyeSlash, faEnvelope } from "@fortawesome/free-solid-svg-icons";
+import { faLock, faEye, faEyeSlash, faEnvelope } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import loginSound from "../../assets/audio/intro.m4a";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
 // eslint-disable-next-line react/prop-types
-const LoginPage = ({ setIsAuthenticated, setIsAdmin }) => {
+const LoginPage = () => {
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [showPassword, setShowPassword] = useState(false);
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    // Check if the token is already in localStorage on component mount
-    useEffect(() => {
-        const token = localStorage.getItem("token");
-        if (token) {
-            // If a token exists, set the headers for axios
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-            // Redirect to dashboard for all users
-            const role = localStorage.getItem("role");
-            if (role) {
-                setIsAuthenticated(true);
-                setIsAdmin(role === "admin");
-                navigate("/dashboard");
-            }
-        }
-    }, [navigate, setIsAuthenticated, setIsAdmin]);
-
     const handleSignUpClick = () => {
         navigate("/register");
     };
 
-    const handleLogin = async (e) => {
+    const handleLogin = (e) => {
         e.preventDefault();
 
         if (!email || !password) {
@@ -50,52 +33,17 @@ const LoginPage = ({ setIsAuthenticated, setIsAdmin }) => {
 
         setLoading(true);
 
-        try {
-            delete axios.defaults.headers.common['Authorization'];
-
-            const response = await axios.post(
-                "https://localhost:3000/api/auth/login",
-                { email, password }
-            );
-
-            const { token, role } = response.data;
-
-            localStorage.setItem("token", token);
-            localStorage.setItem("role", role);
-
-            axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-
-            setIsAuthenticated(true);
-            setIsAdmin(role === "admin");
-
+        setTimeout(() => {
+            // No token, no admin, no roles, just go to dashboard
             const audio = new Audio(loginSound);
-            audio.play().catch((error) => {
-                console.error("Error playing login sound:", error);
-            });
-
+            audio.play().catch(() => {});
             toast.success("Login successful!", {
                 position: "top-right",
                 autoClose: 1500,
             });
-
-            navigate("/dashboard");
-        } catch (error) {
-            console.error("Login error: ", error);
-            if (error.response && error.response.status === 401) {
-                toast.error("Invalid email or password.", {
-                    position: "top-right",
-                    autoClose: 3000,
-                });
-            } else {
-                const errorMsg = error?.response?.data?.message || "Error logging in. Please try again.";
-                toast.error(errorMsg, {
-                    position: "top-right",
-                    autoClose: 3000,
-                });
-            }
-        } finally {
             setLoading(false);
-        }
+            navigate("/dashboard");
+        }, 1000);
     };
 
     const bubbles = useMemo(() => {

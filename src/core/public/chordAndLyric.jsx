@@ -1,42 +1,47 @@
-import React, { useState, useEffect } from "react";
-import Sidebar from "../../components/sidebar.jsx";
-import axios from "axios";
+import React, { useState } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { FaHeart, FaRegHeart, FaMusic, FaGuitar, FaPlay, FaSearch, FaFire, FaStar } from "react-icons/fa";
 import { useTheme } from "../../components/ThemeContext";
+import { useTranslation } from "react-i18next";
+import { toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+import Sidebar from "../../components/sidebar.jsx";
 import Footer from "../../components/footer.jsx";
 
 export default function ChordAndLyric() {
+    const { t } = useTranslation();
     const { theme } = useTheme();
-    const [songs, setSongs] = useState([]);
+    const navigate = useNavigate();
+    const [songs, setSongs] = useState([
+        { _id: "1", songName: "Wonderwall", instrument: "Guitar" },
+        { _id: "2", songName: "Let It Be", instrument: "Piano" },
+        { _id: "3", songName: "Somewhere Over the Rainbow", instrument: "Ukulele" },
+        { _id: "4", songName: "Hallelujah", instrument: "Guitar" },
+        { _id: "5", songName: "Clair de Lune", instrument: "Piano" },
+        { _id: "6", songName: "Aloha Oe", instrument: "Ukulele" },
+    ]);
     const [selectedCategory, setSelectedCategory] = useState("Guitar");
-    const [userProfile, setUserProfile] = useState(null);
+    // Use dummy profile with fallback image
+    const [userProfile] = useState({ name: "Demo User", profilePicture: "src/assets/images/profile.png" });
     const [likedSongs, setLikedSongs] = useState([]);
     const [searchTerm, setSearchTerm] = useState("");
     const [hoveredSong, setHoveredSong] = useState(null);
     const [showLikeAnimation, setShowLikeAnimation] = useState(null);
-    const navigate = useNavigate();
 
-    // Function to get song image using Lorem Picsum (reliable alternative)
+    // Function to get song image using Lorem Picsum
     const getSongImage = (songName) => {
-        // Create a deterministic but varied image based on song name
         const songHash = songName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
-        const imageId = (songHash % 1000) + 1; // Ensure positive number
-        
-        // Use Lorem Picsum with a seeded random number for consistency
+        const imageId = (songHash % 1000) + 1;
         return `https://picsum.photos/400/300?random=${imageId}`;
     };
 
     // Enhanced error handler for images
     const handleImageError = (e, songName) => {
         const target = e.target;
-        
-        // First fallback: try a different Picsum image
         if (target.src.includes('picsum.photos')) {
             const newId = Math.floor(Math.random() * 1000) + 1;
             target.src = `https://picsum.photos/400/300?random=${newId}`;
         } else {
-            // Final fallback: use a beautiful SVG placeholder
             target.src = `data:image/svg+xml,${encodeURIComponent(
                 `<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300" viewBox="0 0 400 300">
                     <defs>
@@ -59,72 +64,8 @@ export default function ChordAndLyric() {
         }
     };
 
-    useEffect(() => {
-        const fetchSongs = async () => {
-            try {
-                const response = await axios.get(`https://localhost:3000/api/songs/getsongs?instrument=${selectedCategory.toLowerCase()}`);
-                setSongs(response.data.songs);
-            } catch (error) {
-                alert("Error fetching songs: " + error.message);
-            }
-        };
-
-        fetchSongs();
-    }, [selectedCategory]);
-
-    useEffect(() => {
-        const fetchUserProfile = async () => {
-            try {
-                const response = await fetch("https://localhost:3000/api/auth/profile", {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
-                    },
-                });
-
-                if (!response.ok) {
-                    throw new Error("Failed to fetch profile");
-                }
-
-                const data = await response.json();
-                setUserProfile(data);
-            } catch (error) {
-                alert("Error fetching user profile: " + error.message);
-            }
-        };
-
-        const fetchLikedSongs = async () => {
-            try {
-                const response = await fetch("https://localhost:3000/api/favorites/getfav", {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
-                    },
-                });
-
-                if (!response.ok) {
-                    if (response.status === 404) {
-                        console.log("No liked songs found for this user.");
-                        setLikedSongs([]);
-                        return;
-                    }
-                    throw new Error("Failed to fetch liked songs");
-                }
-
-                const data = await response.json();
-                setLikedSongs(data.songIds.map(song => song._id.toString()));
-            } catch (error) {
-                alert("Error fetching liked songs: " + error.message);
-            }
-        };
-
-        fetchUserProfile();
-        fetchLikedSongs();
-    }, []);
-
-    const handleLikeSong = async (songId, e) => {
+    // Mock like/unlike song
+    const handleLikeSong = (songId, e) => {
         e.preventDefault();
         e.stopPropagation();
 
@@ -132,32 +73,18 @@ export default function ChordAndLyric() {
         setShowLikeAnimation(songId);
         setTimeout(() => setShowLikeAnimation(null), 1000);
 
-        try {
-            console.log(`Toggling favorite for song ID: ${songId}`);
-            const isLiked = likedSongs.includes(songId.toString());
-            const response = await fetch(`https://localhost:3000/api/favorites/songs`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${localStorage.getItem("token")}`,
-                },
-                body: JSON.stringify({ songId }),
+        // Toggle like status
+        setLikedSongs((prev) => {
+            const isLiked = prev.includes(songId);
+            const updated = isLiked
+                ? prev.filter((id) => id !== songId)
+                : [...prev, songId];
+            toast.success(isLiked ? t("Removed from favorites") : t("Added to favorites"), {
+                position: "top-right",
+                autoClose: 1500,
             });
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error(`Failed to toggle favorite. Status: ${response.status}, Message: ${errorText}`);
-                throw new Error(`Failed to toggle favorite: ${response.status} ${errorText}`);
-            }
-
-            const data = await response.json();
-            const updatedSongIds = data.favorite.songIds.map(id => id.toString());
-            setLikedSongs(updatedSongIds);
-            console.log(`Toggled favorite for song ${songId}. New likedSongs count: ${updatedSongIds.length}`);
-        } catch (error) {
-            console.error("Error in handleLikeSong:", error);
-            alert(`Error toggling favorite: ${error.message}`);
-        }
+            return updated;
+        });
     };
 
     const getInstrumentIcon = (instrument) => {
@@ -186,11 +113,15 @@ export default function ChordAndLyric() {
         }
     };
 
-    const filteredSongs = songs.filter(song =>
-        song.songName.toLowerCase().includes(searchTerm.toLowerCase())
+    const filteredSongs = songs.filter(
+        (song) =>
+            song.songName.toLowerCase().includes(searchTerm.toLowerCase()) &&
+            song.instrument === selectedCategory
     );
 
-    const totalSongsCount = songs.length;
+    const totalSongsCount = songs.filter(
+        (song) => song.instrument === selectedCategory
+    ).length;
 
     return (
         <div className={`bg-gradient-to-br min-h-screen flex flex-col ${theme === 'light' ? 'from-purple-100 via-blue-100 to-pink-100' : 'from-gray-900 via-purple-900 to-gray-800'}`}>
@@ -198,7 +129,6 @@ export default function ChordAndLyric() {
                 <Sidebar />
                 <main className="flex-1 p-6 flex justify-center items-start mt-4">
                     <div className="bg-white/70 backdrop-blur-xl dark:bg-gray-800/80 rounded-3xl shadow-2xl border border-white/20 dark:border-gray-700/30 p-8 w-full max-w-7xl h-[85vh] overflow-y-auto">
-                        
                         {/* Stats Section - Only Available Songs and Search Results */}
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
                             <div className="bg-gradient-to-r from-blue-500 to-purple-600 text-white rounded-2xl p-4 text-center">
@@ -206,14 +136,14 @@ export default function ChordAndLyric() {
                                     <FaMusic className="text-2xl mr-2" />
                                     <span className="text-2xl font-bold">{totalSongsCount}</span>
                                 </div>
-                                <p className="text-sm opacity-90">Available Songs</p>
+                                <p className="text-sm opacity-90">{t("Available Songs")}</p>
                             </div>
                             <div className="bg-gradient-to-r from-green-500 to-blue-600 text-white rounded-2xl p-4 text-center">
                                 <div className="flex items-center justify-center mb-2">
                                     <FaSearch className="text-2xl mr-2" />
                                     <span className="text-2xl font-bold">{filteredSongs.length}</span>
                                 </div>
-                                <p className="text-sm opacity-90">Search Results</p>
+                                <p className="text-sm opacity-90">{t("Search Results")}</p>
                             </div>
                         </div>
 
@@ -224,7 +154,7 @@ export default function ChordAndLyric() {
                             </div>
                             <input
                                 type="text"
-                                placeholder="Search for songs..."
+                                placeholder={t("Search for songs...")}
                                 value={searchTerm}
                                 onChange={(e) => setSearchTerm(e.target.value)}
                                 className="w-full pl-12 pr-4 py-4 bg-white/80 dark:bg-gray-700/80 backdrop-blur-sm rounded-2xl border border-white/30 dark:border-gray-600/30 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent text-gray-800 dark:text-gray-200 placeholder-gray-500 dark:placeholder-gray-400 text-lg transition-all duration-300 hover:shadow-lg"
@@ -261,11 +191,11 @@ export default function ChordAndLyric() {
                                         <FaMusic className="text-gray-400 text-2xl" />
                                     </div>
                                     <p className="text-xl text-gray-500 dark:text-gray-400 mb-2">
-                                        {searchTerm ? "No songs found matching your search" : "No songs available in this category"}
+                                        {searchTerm ? t("No songs found matching your search") : t("No songs available in this category")}
                                     </p>
                                     {searchTerm && (
                                         <p className="text-gray-400 dark:text-gray-500">
-                                            Try searching for something else
+                                            {t("Try searching for something else")}
                                         </p>
                                     )}
                                 </div>
@@ -283,7 +213,6 @@ export default function ChordAndLyric() {
                                             }}
                                         >
                                             <div className="relative bg-gradient-to-br from-white/80 to-white/60 dark:from-gray-700/80 dark:to-gray-800/60 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300 hover:scale-105 border border-white/30 dark:border-gray-600/30 overflow-hidden">
-                                                
                                                 {/* Song Image */}
                                                 <div className="relative h-48 overflow-hidden">
                                                     <img
@@ -294,22 +223,20 @@ export default function ChordAndLyric() {
                                                         loading="lazy"
                                                     />
                                                     <div className="absolute inset-0 bg-gradient-to-t from-black/50 to-transparent"></div>
-                                                    
                                                     {/* Like Button on Image */}
                                                     <button
-                                                        onClick={(e) => handleLikeSong(song._id.toString(), e)}
+                                                        onClick={(e) => handleLikeSong(song._id, e)}
                                                         className={`absolute top-3 right-3 p-2 rounded-full transition-all duration-300 transform hover:scale-110 backdrop-blur-sm ${
-                                                            likedSongs.includes(song._id.toString())
+                                                            likedSongs.includes(song._id)
                                                                 ? "bg-red-500/80 text-white"
                                                                 : "bg-white/80 text-gray-700 hover:bg-red-500/80 hover:text-white"
                                                         }`}
                                                     >
-                                                        {likedSongs.includes(song._id.toString()) ? (
+                                                        {likedSongs.includes(song._id) ? (
                                                             <FaHeart className="text-sm" />
                                                         ) : (
                                                             <FaRegHeart className="text-sm" />
                                                         )}
-                                                        
                                                         {/* Animation Effect */}
                                                         {showLikeAnimation === song._id && (
                                                             <div className="absolute inset-0 flex items-center justify-center">
@@ -317,18 +244,16 @@ export default function ChordAndLyric() {
                                                             </div>
                                                         )}
                                                     </button>
-
                                                     {/* Liked Badge */}
-                                                    {likedSongs.includes(song._id.toString()) && (
+                                                    {likedSongs.includes(song._id) && (
                                                         <div className="absolute top-3 left-3">
                                                             <div className="flex items-center px-2 py-1 rounded-full text-xs font-medium text-white bg-gradient-to-r from-yellow-400 to-orange-500 shadow-lg backdrop-blur-sm">
                                                                 <FaStar className="text-xs mr-1" />
-                                                                <span>Liked</span>
+                                                                <span>{t("Liked")}</span>
                                                             </div>
                                                         </div>
                                                     )}
                                                 </div>
-
                                                 {/* Song Info */}
                                                 <div className="p-4">
                                                     <h3 className="text-lg font-bold text-gray-800 dark:text-gray-200 group-hover:text-purple-600 dark:group-hover:text-purple-400 transition-colors mb-2 line-clamp-2">
@@ -336,10 +261,9 @@ export default function ChordAndLyric() {
                                                     </h3>
                                                     <div className="flex items-center text-gray-500 dark:text-gray-400 text-sm">
                                                         <FaPlay className="mr-2" />
-                                                        <span>Click to view chords</span>
+                                                        <span>{t("Click to view chords")}</span>
                                                     </div>
                                                 </div>
-
                                                 {/* Hover Effect */}
                                                 {hoveredSong === song._id && (
                                                     <div className="absolute inset-0 bg-gradient-to-r from-purple-500/10 to-blue-500/10 rounded-2xl pointer-events-none"></div>
@@ -352,33 +276,22 @@ export default function ChordAndLyric() {
                         </div>
                     </div>
                 </main>
-
                 {/* Enhanced Profile Picture */}
                 <div className="absolute top-4 right-4">
                     <div className="relative group">
                         <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-300"></div>
                         <div className="relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-full p-1">
-                            {userProfile && userProfile.profilePicture ? (
-                                <img
-                                    src={`https://localhost:3000/${userProfile.profilePicture}`}
-                                    alt="Profile"
-                                    className="w-16 h-16 rounded-full border-2 border-white dark:border-gray-600 cursor-pointer hover:scale-110 transition-transform duration-300"
-                                    onClick={() => navigate("/profile")}
-                                />
-                            ) : (
-                                <img
-                                    src="/assets/images/profile.png"
-                                    alt="Profile"
-                                    className="w-16 h-16 rounded-full border-2 border-white dark:border-gray-600 cursor-pointer hover:scale-110 transition-transform duration-300"
-                                    onClick={() => navigate("/profile")}
-                                />
-                            )}
+                            <img
+                                src={userProfile.profilePicture || "/assets/images/profile.png"}
+                                alt="Profile"
+                                className="w-16 h-16 rounded-full border-2 border-white dark:border-gray-600 cursor-pointer hover:scale-110 transition-transform duration-300"
+                                onClick={() => navigate("/profile")}
+                            />
                         </div>
                     </div>
                 </div>
             </div>
             <Footer />
-
             {/* Custom CSS for animations */}
             <style jsx>{`
                 @keyframes fadeInUp {
@@ -391,11 +304,9 @@ export default function ChordAndLyric() {
                         transform: translateY(0);
                     }
                 }
-                
                 .animate-pulse {
                     animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
                 }
-                
                 @keyframes pulse {
                     0%, 100% {
                         opacity: 1;
@@ -404,18 +315,15 @@ export default function ChordAndLyric() {
                         opacity: .5;
                     }
                 }
-                
                 .animate-ping {
                     animation: ping 1s cubic-bezier(0, 0, 0.2, 1) infinite;
                 }
-                
                 @keyframes ping {
                     75%, 100% {
                         transform: scale(2);
                         opacity: 0;
                     }
                 }
-                
                 .line-clamp-2 {
                     display: -webkit-box;
                     -webkit-line-clamp: 2;

@@ -7,87 +7,38 @@ import Footer from "../../components/footer.jsx";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+// Dummy data for frontend-only version
+const DUMMY_QUIZZES = [
+  { instrument: "Guitar", day: "Day 1" },
+  { instrument: "Guitar", day: "Day 2" },
+  { instrument: "Piano", day: "Day 1" },
+  { instrument: "Ukulele", day: "Day 1" },
+  { instrument: "Ukulele", day: "Day 2" },
+];
+const DUMMY_COMPLETED = [
+  { instrument: "Guitar", day: "Day 1" },
+  { instrument: "Ukulele", day: "Day 1" },
+];
+const DUMMY_PROFILE = {
+  profilePicture: "src/assets/images/profile.png",
+};
+
 export default function Lesson() {
   const { theme } = useTheme();
-  const [quizzes, setQuizzes] = useState([]);
+  const [quizzes, setQuizzes] = useState(DUMMY_QUIZZES);
   const [selectedCategory, setSelectedCategory] = useState("Guitar");
   const [incorrectAnswers, setIncorrectAnswers] = useState([]);
-  const [completedLessons, setCompletedLessons] = useState([]);
+  const [completedLessons, setCompletedLessons] = useState(DUMMY_COMPLETED);
   const navigate = useNavigate();
-  const [userProfile, setUserProfile] = useState(null);
+  const [userProfile, setUserProfile] = useState(DUMMY_PROFILE);
   const [hoveredDay, setHoveredDay] = useState(null);
   const [showCelebration, setShowCelebration] = useState(false);
 
   useEffect(() => {
-    const fetchQuizzes = async () => {
-      try {
-        const response = await fetch(
-          `https://localhost:3000/api/quiz/getquiz?instrument=${encodeURIComponent(selectedCategory.toLowerCase())}`
-        );
-        if (!response.ok) {
-          throw new Error("Failed to fetch quizzes");
-        }
-        const data = await response.json();
-        setQuizzes(data);
-      } catch (error) {
-        toast.error("Error fetching quizzes: " + error.message, {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
-    };
-
-    const fetchCompletedLessons = async () => {
-      try {
-        const response = await fetch("https://localhost:3000/api/completed/getcompleted", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch completed lessons");
-        }
-
-        const data = await response.json();
-        setCompletedLessons(data.completedLessons || []);
-      } catch (error) {
-        toast.error("Error fetching completed lessons: " + error.message, {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
-    };
-
-    const fetchUserProfile = async () => {
-      try {
-        const response = await fetch("https://localhost:3000/api/auth/profile", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch profile");
-        }
-
-        const data = await response.json();
-        setUserProfile(data);
-      } catch (error) {
-        toast.error("Error fetching user profile: " + error.message, {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
-    };
-
-    fetchQuizzes();
-    fetchCompletedLessons();
-    fetchUserProfile();
+    // No backend calls, using dummy data
+    setQuizzes(DUMMY_QUIZZES);
+    setCompletedLessons(DUMMY_COMPLETED);
+    setUserProfile(DUMMY_PROFILE);
   }, [selectedCategory]);
 
   const filteredQuizzes = quizzes.filter((quiz) => quiz.instrument.toLowerCase() === selectedCategory.toLowerCase());
@@ -106,7 +57,7 @@ export default function Lesson() {
 
   const isDayAccessible = (day) => {
     if (!day || uniqueDays.length === 0) return false;
-    if (day === uniqueDays[0]) return true; // First day is always accessible
+    if (day === uniqueDays[0]) return true;
     const currentIndex = uniqueDays.indexOf(day);
     if (currentIndex === -1) return false;
     const previousDay = uniqueDays[currentIndex - 1];
@@ -399,21 +350,12 @@ export default function Lesson() {
           <div className="relative group">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-300"></div>
             <div className="relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-full p-1">
-              {userProfile && userProfile.profilePicture ? (
-                <img
-                  src={`https://localhost:3000/${userProfile.profilePicture}`}
-                  alt="Profile"
-                  className="w-16 h-16 rounded-full border-2 border-white dark:border-gray-600 cursor-pointer hover:scale-110 transition-transform duration-300"
-                  onClick={() => navigate("/profile")}
-                />
-              ) : (
-                <img
-                  src="src/assets/images/profile.png"
-                  alt="Profile"
-                  className="w-16 h-16 rounded-full border-2 border-white dark:border-gray-600 cursor-pointer hover:scale-110 transition-transform duration-300"
-                  onClick={() => navigate("/profile")}
-                />
-              )}
+              <img
+                src={userProfile && userProfile.profilePicture ? userProfile.profilePicture : "src/assets/images/profile.png"}
+                alt="Profile"
+                className="w-16 h-16 rounded-full border-2 border-white dark:border-gray-600 cursor-pointer hover:scale-110 transition-transform duration-300"
+                onClick={() => navigate("/profile")}
+              />
             </div>
           </div>
         </div>

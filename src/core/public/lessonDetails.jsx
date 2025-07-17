@@ -7,6 +7,32 @@ import Footer from "../../components/footer.jsx";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+// Dummy quiz data for frontend-only version
+const DUMMY_QUIZZES = [
+  {
+    question: "What is the basic chord for Guitar Day 1?",
+    options: ["C Major", "G Major", "D Minor", "A Minor"],
+    correctAnswer: "C Major",
+    chordDiagram: "", // put a filename if needed
+  },
+  {
+    question: "Which chord uses all four fingers in Piano Day 1?",
+    options: ["C Major", "F Major", "G Major", "D Major"],
+    correctAnswer: "F Major",
+    chordDiagram: "",
+  },
+  {
+    question: "What is the open string chord for Ukulele Day 1?",
+    options: ["C", "G", "A", "F"],
+    correctAnswer: "C",
+    chordDiagram: "",
+  },
+];
+
+const DUMMY_PROFILE = {
+  profilePicture: "/profile.png",
+};
+
 export default function LessonDetails() {
   const { theme } = useTheme();
   const { day, instrument } = useParams();
@@ -16,7 +42,7 @@ export default function LessonDetails() {
   const [selectedAnswers, setSelectedAnswers] = useState([]);
   const [isCorrect, setIsCorrect] = useState(null);
   const [feedbackMessage, setFeedbackMessage] = useState("");
-  const [userProfile, setUserProfile] = useState(null);
+  const [userProfile, setUserProfile] = useState(DUMMY_PROFILE);
   const [correctSound] = useState(new Audio("/src/assets/audio/true.mp3"));
   const [incorrectSound] = useState(new Audio("/src/assets/audio/false.mp3"));
   const [completedSound] = useState(new Audio("/src/assets/audio/completed.mp3"));
@@ -25,61 +51,15 @@ export default function LessonDetails() {
   const [showFeedback, setShowFeedback] = useState(false);
 
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const response = await fetch("https://localhost:3000/api/auth/profile", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch profile");
-        }
-
-        const data = await response.json();
-        setUserProfile(data);
-      } catch (error) {
-        console.error("Error fetching user profile:", error);
-        toast.error("Error fetching user profile: " + error.message, {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
-    };
-
-    const fetchQuizzes = async () => {
-      try {
-        const response = await fetch(
-          `https://localhost:3000/api/quiz/getquiz?day=${encodeURIComponent(day)}&instrument=${encodeURIComponent(
-            instrument
-          )}`
-        );
-        if (!response.ok) {
-          throw new Error("Failed to fetch quizzes");
-        }
-        const data = await response.json();
-        console.log("Fetched quiz data:", data);
-
-        if (data.length > 0) {
-          const allQuizzes = data.flatMap((quiz) => quiz.quizzes);
-          setQuizzes(allQuizzes);
-        } else {
-          setQuizzes([]);
-        }
-      } catch (error) {
-        console.error("Error fetching quizzes:", error);
-        toast.error("Error fetching quizzes: " + error.message, {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
-    };
-
-    fetchUserProfile();
-    fetchQuizzes();
+    // Use dummy data for frontend-only version
+    setUserProfile(DUMMY_PROFILE);
+    // Filter dummy quizzes for instrument and day
+    const filteredQuizzes = DUMMY_QUIZZES.filter(
+      q =>
+        (!instrument || q.question.toLowerCase().includes(instrument.toLowerCase())) &&
+        (!day || q.question.toLowerCase().includes(day.toLowerCase()))
+    );
+    setQuizzes(filteredQuizzes.length ? filteredQuizzes : DUMMY_QUIZZES);
   }, [day, instrument]);
 
   const handleOptionClick = (option, correctAnswer) => {
@@ -89,9 +69,9 @@ export default function LessonDetails() {
     setShowFeedback(true);
 
     if (correct) {
-      correctSound.play().catch((error) => console.error("Error playing correct sound:", error));
+      correctSound.play().catch(() => {});
     } else {
-      incorrectSound.play().catch((error) => console.error("Error playing incorrect sound:", error));
+      incorrectSound.play().catch(() => {});
     }
 
     const updatedAnswers = [...selectedAnswers];
@@ -109,10 +89,9 @@ export default function LessonDetails() {
         position: "top-right",
         autoClose: 3000,
       });
-      incorrectSound.play().catch((error) => console.error("Error playing incorrect sound:", error));
+      incorrectSound.play().catch(() => {});
       return;
     }
-
     if (currentIndex < quizzes.length - 1) {
       setIsTransitioning(true);
       setTimeout(() => {
@@ -140,7 +119,7 @@ export default function LessonDetails() {
     setShowFeedback(false);
   };
 
-  const handleSubmit = async () => {
+  const handleSubmit = () => {
     const hasIncorrectAnswers = selectedAnswers.some((answer) => answer && !answer.correct);
     if (hasIncorrectAnswers || selectedAnswers.length < quizzes.length) {
       toast.error("Please answer all questions correctly before submitting.", {
@@ -149,42 +128,19 @@ export default function LessonDetails() {
       });
       return;
     }
-
-    try {
-      const response = await fetch("https://localhost:3000/api/completed/addcompleted", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ day, instrument }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to mark lesson as completed");
-      }
-
-      setShowCompletionGif(true);
-      completedSound.play().catch((error) => console.error("Error playing completed sound:", error));
-      
-      toast.success("Lesson completed successfully!", {
-        position: "top-right",
-        autoClose: 1500,
-      });
-
-      setTimeout(() => {
-        setShowCompletionGif(false);
-        navigate("/lesson");
-      }, 3500);
-    } catch (error) {
-      toast.error("Error marking lesson as completed: " + error.message, {
-        position: "top-right",
-        autoClose: 3000,
-      });
-    }
+    setShowCompletionGif(true);
+    completedSound.play().catch(() => {});
+    toast.success("Lesson completed successfully!", {
+      position: "top-right",
+      autoClose: 1500,
+    });
+    setTimeout(() => {
+      setShowCompletionGif(false);
+      navigate("/lesson");
+    }, 3500);
   };
 
-  const progressPercentage = ((currentIndex + 1) / quizzes.length) * 100;
+  const progressPercentage = quizzes.length ? ((currentIndex + 1) / quizzes.length) * 100 : 0;
 
   return (
     <div
@@ -209,7 +165,7 @@ export default function LessonDetails() {
                 <header className="mb-8 space-y-4">
                   <div className="flex items-center justify-between">
                     <h2 className="text-4xl font-bold bg-gradient-to-r from-purple-600 to-blue-600 bg-clip-text text-transparent">
-                      {day} - {instrument.charAt(0).toUpperCase() + instrument.slice(1)}
+                      {day} - {instrument?.charAt(0).toUpperCase() + (instrument?.slice(1)||"")}
                     </h2>
                     <div className="flex items-center space-x-2 text-sm text-gray-600 dark:text-gray-400">
                       <Sparkles className="w-4 h-4" />
@@ -234,11 +190,10 @@ export default function LessonDetails() {
                     <div className="relative group">
                       {quizzes[currentIndex].chordDiagram ? (
                         <img
-                          src={`https://localhost:3000/uploads/${quizzes[currentIndex].chordDiagram}`}
+                          src={quizzes[currentIndex].chordDiagram}
                           alt="Quiz Diagram"
                           className="w-full h-full max-h-[500px] object-contain rounded-2xl shadow-2xl border border-white/20 dark:border-gray-700/30 transition-all duration-300 group-hover:scale-105 group-hover:shadow-3xl"
                           onError={(e) => {
-                            console.error("Error loading image:", e.target.src);
                             e.target.src = "/assets/images/placeholder.png";
                           }}
                         />
@@ -387,21 +342,12 @@ export default function LessonDetails() {
         {/* Profile picture */}
         <div className="absolute top-4 right-4 group">
           <div className="bg-white/70 backdrop-blur-xl dark:bg-gray-800/80 rounded-full p-2 shadow-lg border border-white/20 dark:border-gray-700/30 transition-all duration-300 hover:shadow-xl">
-            {userProfile && userProfile.profilePicture ? (
-              <img
-                src={`https://localhost:3000/${userProfile.profilePicture}`}
-                alt="Profile"
-                className="w-16 h-16 rounded-full border-2 border-white/50 dark:border-gray-600/50 cursor-pointer transition-all duration-300 hover:border-purple-400 hover:scale-110"
-                onClick={() => navigate("/profile")}
-              />
-            ) : (
-              <img
-                src="/profile.png"
-                alt="Profile"
-                className="w-16 h-16 rounded-full border-2 border-white/50 dark:border-gray-600/50 cursor-pointer transition-all duration-300 hover:border-purple-400 hover:scale-110"
-                onClick={() => navigate("/profile")}
-              />
-            )}
+            <img
+              src={userProfile && userProfile.profilePicture ? userProfile.profilePicture : "/profile.png"}
+              alt="Profile"
+              className="w-16 h-16 rounded-full border-2 border-white/50 dark:border-gray-600/50 cursor-pointer transition-all duration-300 hover:border-purple-400 hover:scale-110"
+              onClick={() => navigate("/profile")}
+            />
           </div>
         </div>
         

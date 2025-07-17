@@ -7,83 +7,38 @@ import Footer from "../../components/footer.jsx";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+// Dummy data for frontend-only version
+const DUMMY_SESSIONS = [
+  { instrument: "Guitar", day: "Day 1" },
+  { instrument: "Guitar", day: "Day 2" },
+  { instrument: "Piano", day: "Day 1" },
+  { instrument: "Ukulele", day: "Day 1" },
+  { instrument: "Ukulele", day: "Day 2" },
+];
+const DUMMY_COMPLETED_SESSIONS = [
+  { instrument: "Guitar", day: "Day 1" },
+  { instrument: "Ukulele", day: "Day 1" },
+];
+const DUMMY_PROFILE = {
+  profilePicture: "src/assets/images/profile.png",
+};
+
 export default function PracticeSession() {
   const { theme } = useTheme();
-  const [sessions, setSessions] = useState([]);
-  const [completedSessions, setCompletedSessions] = useState([]);
+  const [sessions, setSessions] = useState(DUMMY_SESSIONS);
+  const [completedSessions, setCompletedSessions] = useState(DUMMY_COMPLETED_SESSIONS);
   const [selectedInstrument, setSelectedInstrument] = useState("Guitar");
   const navigate = useNavigate();
-  const [userProfile, setUserProfile] = useState(null);
+  const [userProfile, setUserProfile] = useState(DUMMY_PROFILE);
   const [hoveredDay, setHoveredDay] = useState(null);
   const [showCelebration, setShowCelebration] = useState(false);
 
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const response = await fetch("https://localhost:3000/api/auth/profile", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch profile");
-        }
-
-        const data = await response.json();
-        setUserProfile(data);
-      } catch (error) {
-        toast.error("Error fetching user profile: " + error.message, {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
-    };
-
-    const fetchSessions = async () => {
-      try {
-        const response = await fetch("https://localhost:3000/api/sessions");
-        if (!response.ok) {
-          throw new Error("Failed to fetch sessions");
-        }
-        const data = await response.json();
-        setSessions(data);
-      } catch (error) {
-        toast.error("Error fetching practice sessions: " + error.message, {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
-    };
-
-    const fetchCompletedSessions = async () => {
-      try {
-        const response = await fetch("https://localhost:3000/api/completed-sessions/getcompleted", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        if (!response.ok) {
-          throw new Error("Failed to fetch completed sessions");
-        }
-        const data = await response.json();
-        setCompletedSessions(data.completedSessions || []);
-      } catch (error) {
-        toast.error("Error fetching completed sessions: " + error.message, {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
-    };
-
-    fetchUserProfile();
-    fetchSessions();
-    fetchCompletedSessions();
-  }, []);
+    // No backend calls, use dummy data
+    setSessions(DUMMY_SESSIONS);
+    setCompletedSessions(DUMMY_COMPLETED_SESSIONS);
+    setUserProfile(DUMMY_PROFILE);
+  }, [selectedInstrument]);
 
   const filteredSessions = sessions.filter((session) => session.instrument === selectedInstrument);
   const uniqueDays = [...new Set(filteredSessions.map((session) => session.day))].sort((a, b) => {
@@ -363,21 +318,12 @@ export default function PracticeSession() {
           <div className="relative group">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-300"></div>
             <div className="relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-full p-1">
-              {userProfile && userProfile.profilePicture ? (
-                <img
-                  src={`https://localhost:3000/${userProfile.profilePicture}`}
-                  alt="Profile"
-                  className="w-16 h-16 rounded-full border-2 border-white dark:border-gray-600 cursor-pointer hover:scale-110 transition-transform duration-300"
-                  onClick={() => navigate("/profile")}
-                />
-              ) : (
-                <img
-                  src="src/assets/images/profile.png"
-                  alt="Profile"
-                  className="w-16 h-16 rounded-full border-2 border-white dark:border-gray-600 cursor-pointer hover:scale-110 transition-transform duration-300"
-                  onClick={() => navigate("/profile")}
-                />
-              )}
+              <img
+                src={userProfile && userProfile.profilePicture ? userProfile.profilePicture : "src/assets/images/profile.png"}
+                alt="Profile"
+                className="w-16 h-16 rounded-full border-2 border-white dark:border-gray-600 cursor-pointer hover:scale-110 transition-transform duration-300"
+                onClick={() => navigate("/profile")}
+              />
             </div>
           </div>
         </div>

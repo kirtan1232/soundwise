@@ -7,6 +7,43 @@ import Footer from "../../components/footer.jsx";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
+// Dummy session data for frontend-only version
+const DUMMY_SESSIONS = [
+  {
+    _id: "1",
+    day: "Day 1",
+    instrument: "Guitar",
+    title: "Chord Practice",
+    description: "Practice major chords for 5 minutes.",
+    duration: 5,
+    instructions: "Play the C, G, and F chords in sequence.",
+    file: "https://www.youtube.com/watch?v=dQw4w9WgXcQ"
+  },
+  {
+    _id: "2",
+    day: "Day 2",
+    instrument: "Guitar",
+    title: "Strumming Patterns",
+    description: "Practice strumming for 5 minutes.",
+    duration: 5,
+    instructions: "Try different strumming patterns.",
+    file: ""
+  },
+  {
+    _id: "3",
+    day: "Day 1",
+    instrument: "Piano",
+    title: "Finger Exercise",
+    description: "Practice finger movement for 5 minutes.",
+    duration: 5,
+    instructions: "Warm up your fingers.",
+    file: ""
+  }
+];
+const DUMMY_PROFILE = {
+  profilePicture: "/profile.png",
+};
+
 export default function SessionDetails() {
   const { theme } = useTheme();
   const { day, instrument } = useParams();
@@ -14,83 +51,20 @@ export default function SessionDetails() {
   const [completed, setCompleted] = useState(false);
   const [canMarkComplete, setCanMarkComplete] = useState(false);
   const [timeLeft, setTimeLeft] = useState(0);
-  const [userProfile, setUserProfile] = useState(null);
+  const [userProfile, setUserProfile] = useState(DUMMY_PROFILE);
   const [showCompleteAnimation, setShowCompleteAnimation] = useState(false);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const fetchUserProfile = async () => {
-      try {
-        const response = await fetch("https://localhost:3000/api/auth/profile", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-
-        if (!response.ok) {
-          throw new Error("Failed to fetch profile");
-        }
-
-        const data = await response.json();
-        setUserProfile(data);
-      } catch (error) {
-        toast.error("Error fetching user profile: " + error.message, {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
-    };
-
-    const fetchSessions = async () => {
-      try {
-        const response = await fetch(`https://localhost:3000/api/sessions`);
-        if (!response.ok) {
-          throw new Error("Failed to fetch sessions");
-        }
-        const data = await response.json();
-        const filtered = data.filter((session) => session.day === day && session.instrument === instrument);
-        setSessions(filtered);
-        if (filtered.length > 0) {
-          setTimeLeft(filtered[0].duration * 60);
-          fetchCompletionStatus();
-        }
-      } catch (error) {
-        toast.error("Error fetching sessions: " + error.message, {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
-    };
-
-    const fetchCompletionStatus = async () => {
-      try {
-        const response = await fetch("https://localhost:3000/api/completed-sessions/getcompleted", {
-          method: "GET",
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${localStorage.getItem("token")}`,
-          },
-        });
-        if (!response.ok) {
-          throw new Error("Failed to fetch completion status");
-        }
-        const data = await response.json();
-        const isCompleted = data.completedSessions.some(
-          (s) => s.day === day && s.instrument === instrument
-        );
-        setCompleted(isCompleted);
-      } catch (error) {
-        toast.error("Error fetching completion status: " + error.message, {
-          position: "top-right",
-          autoClose: 3000,
-        });
-      }
-    };
-
-    fetchUserProfile();
-    fetchSessions();
+    // Use dummy data for frontend-only version
+    setUserProfile(DUMMY_PROFILE);
+    const filtered = DUMMY_SESSIONS.filter(
+      (session) => session.day === day && session.instrument === instrument
+    );
+    setSessions(filtered);
+    if (filtered.length > 0) {
+      setTimeLeft(filtered[0].duration * 60);
+    }
   }, [day, instrument]);
 
   useEffect(() => {
@@ -121,7 +95,7 @@ export default function SessionDetails() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const markAsComplete = async () => {
+  const markAsComplete = () => {
     if (!canMarkComplete) {
       toast.warn("Finish the practice first.", {
         position: "top-right",
@@ -129,35 +103,13 @@ export default function SessionDetails() {
       });
       return;
     }
-
-    try {
-      const response = await fetch("https://localhost:3000/api/completed-sessions/toggle", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${localStorage.getItem("token")}`,
-        },
-        body: JSON.stringify({ day, instrument }),
-      });
-
-      if (!response.ok) {
-        throw new Error("Failed to mark session as complete");
-      }
-
-      const data = await response.json();
-      setCompleted(!completed);
-      setShowCompleteAnimation(true);
-      setTimeout(() => setShowCompleteAnimation(false), 2000);
-      toast.success("Session completion toggled!", {
-        position: "top-right",
-        autoClose: 1500,
-      });
-    } catch (error) {
-      toast.error("Error marking session as complete: " + error.message, {
-        position: "top-right",
-        autoClose: 3000,
-      });
-    }
+    setCompleted(true);
+    setShowCompleteAnimation(true);
+    setTimeout(() => setShowCompleteAnimation(false), 2000);
+    toast.success("Session marked as complete!", {
+      position: "top-right",
+      autoClose: 1500,
+    });
   };
 
   return (
@@ -301,21 +253,12 @@ export default function SessionDetails() {
           <div className="relative group">
             <div className="absolute inset-0 bg-gradient-to-r from-purple-500 to-blue-500 rounded-full blur opacity-75 group-hover:opacity-100 transition duration-300"></div>
             <div className="relative bg-white/80 dark:bg-gray-800/80 backdrop-blur-lg rounded-full p-1">
-              {userProfile && userProfile.profilePicture ? (
-                <img
-                  src={`https://localhost:3000/${userProfile.profilePicture}`}
-                  alt="Profile"
-                  className="w-16 h-16 rounded-full border-2 border-white dark:border-gray-600 cursor-pointer hover:scale-110 transition-transform duration-300"
-                  onClick={() => navigate("/profile")}
-                />
-              ) : (
-                <img
-                  src="/profile.png"
-                  alt="Profile"
-                  className="w-16 h-16 rounded-full border-2 border-white dark:border-gray-600 cursor-pointer hover:scale-110 transition-transform duration-300"
-                  onClick={() => navigate("/profile")}
-                />
-              )}
+              <img
+                src={userProfile && userProfile.profilePicture ? userProfile.profilePicture : "/profile.png"}
+                alt="Profile"
+                className="w-16 h-16 rounded-full border-2 border-white dark:border-gray-600 cursor-pointer hover:scale-110 transition-transform duration-300"
+                onClick={() => navigate("/profile")}
+              />
             </div>
           </div>
         </div>

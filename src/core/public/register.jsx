@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
+
+import { useState, useMemo } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faUser, faLock, faEnvelope, faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
 import { useNavigate } from "react-router-dom";
-import axios from "axios";
 import { toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -16,14 +16,7 @@ const RegisterPage = () => {
     const [loading, setLoading] = useState(false);
     const navigate = useNavigate();
 
-    useEffect(() => {
-        const token = localStorage.getItem("token");
-        if (token) {
-            navigate("/dashboard");
-        }
-    }, [navigate]);
-
-    const handleSubmit = async (e) => {
+    const handleSubmit = (e) => {
         e.preventDefault();
 
         if (!name || !email || !password || !confirmPassword) {
@@ -53,30 +46,16 @@ const RegisterPage = () => {
 
         setLoading(true);
 
-        try {
-            const response = await axios.post("https://localhost:3000/api/auth/register", {
-                name,
-                email,
-                password,
-                role: "user",
-            });
-
-            if (response.status === 201) {
-                toast.success("User registered successfully!", {
-                    position: "top-right",
-                    autoClose: 1500,
-                });
-                navigate("/login");
-            }
-        } catch (err) {
-            const message = err.response?.data?.message || "Error registering user. Please try again.";
-            toast.error(message, {
+        // Mock registration response
+        setTimeout(() => {
+            toast.success("User registered successfully!", {
                 position: "top-right",
-                autoClose: 3000,
+                autoClose: 1500,
             });
-        } finally {
             setLoading(false);
-        }
+            alert(`Demo: Registered user: ${name}, email: ${email}`);
+            navigate("/login");
+        }, 1000);
     };
 
     const handleSignInClick = () => {
@@ -156,7 +135,7 @@ const RegisterPage = () => {
                                     placeholder="Enter Email"
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 foci:border-transparent"
+                                    className="w-full pl-10 pr-4 py-2.5 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
                                     required
                                 />
                             </div>

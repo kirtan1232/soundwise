@@ -1,6 +1,5 @@
 import React, { useEffect, useState, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
-import axios from 'axios';
 import Sidebar from "../../components/sidebar.jsx";
 import { useTheme } from "../../components/ThemeContext";
 import Footer from "../../components/footer.jsx";
@@ -8,52 +7,85 @@ import Footer from "../../components/footer.jsx";
 const SongDetails = () => {
     const { theme } = useTheme();
     const { songId } = useParams();
-    const [song, setSong] = useState(null);
-    const [loading, setLoading] = useState(true);
+    const navigate = useNavigate();
     const [fontSize, setFontSize] = useState(16);
     const [autoScroll, setAutoScroll] = useState(false);
     const [scrollSpeed, setScrollSpeed] = useState(5);
     const lyricsRef = useRef(null);
     const [scrollProgress, setScrollProgress] = useState(0);
-    const [userProfile, setUserProfile] = useState(null);
-    const navigate = useNavigate();
+    // Dummy profile
+    const DUMMY_PROFILE = {
+        name: "Demo User",
+        profilePicture: "/profile.png"
+    };
 
-    useEffect(() => {
-        const fetchUserProfile = async () => {
-            try {
-                const response = await fetch("https://localhost:3000/api/auth/profile", {
-                    method: "GET",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${localStorage.getItem("token")}`,
-                    },
-                });
+    // Mock song data
+    const mockSongs = [
+        {
+            _id: "1",
+            songName: "Wonderwall",
+            selectedInstrument: "Guitar",
+            chordDiagrams: ["chord1.png", "chord2.png"],
+            lyrics: [
+                { section: "Verse 1", parsedDocxFile: ["[G]Today is gonna be the day", "That they're [D]gonna throw it back to [Am]you"] },
+                { section: "Chorus", parsedDocxFile: ["And [C]all the roads we [D]have to walk are [Am]winding"] }
+            ]
+        },
+        {
+            _id: "2",
+            songName: "Let It Be",
+            selectedInstrument: "Piano",
+            chordDiagrams: ["chord3.png"],
+            lyrics: [
+                { section: "Verse 1", parsedDocxFile: ["[C]When I find myself in [G]times of trouble", "[Am]Mother Mary [F]comes to me"] },
+                { section: "Chorus", parsedDocxFile: ["[C]Let it [G]be, let it [Am]be, let it [F]be"] }
+            ]
+        },
+        {
+            _id: "3",
+            songName: "Somewhere Over the Rainbow",
+            selectedInstrument: "Ukulele",
+            chordDiagrams: ["chord4.png", "chord5.png"],
+            lyrics: [
+                { section: "Verse 1", parsedDocxFile: ["[C]Somewhere [Em]over the rainbow", "[F]Way up [C]high"] },
+                { section: "Bridge", parsedDocxFile: ["[F]Someday I'll [C]wish upon a star"] }
+            ]
+        },
+        {
+            _id: "4",
+            songName: "Hallelujah",
+            selectedInstrument: "Guitar",
+            chordDiagrams: ["chord6.png"],
+            lyrics: [
+                { section: "Verse 1", parsedDocxFile: ["[C]I heard there was a [Am]secret chord", "[C]That David played and it [Am]pleased the Lord"] }
+            ]
+        },
+        {
+            _id: "5",
+            songName: "Clair de Lune",
+            selectedInstrument: "Piano",
+            chordDiagrams: [],
+            lyrics: []
+        },
+        {
+            _id: "6",
+            songName: "Aloha Oe",
+            selectedInstrument: "Ukulele",
+            chordDiagrams: ["chord7.png"],
+            lyrics: [
+                { section: "Verse 1", parsedDocxFile: ["[C]Aloha [G7]oe, aloha [C]oe"] }
+            ]
+        }
+    ];
 
-                if (!response.ok) {
-                    throw new Error("Failed to fetch profile");
-                }
+    const song = mockSongs.find(s => s._id === songId);
 
-                const data = await response.json();
-                console.log("SongDetails Profile Data:", data);
-                setUserProfile(data);
-            } catch (error) {
-                alert("Error fetching user profile: " + error.message);
-            }
-        };
-
-        const fetchSong = async () => {
-            try {
-                const response = await axios.get(`https://localhost:3000/api/songs/${songId}`);
-                setSong(response.data);
-            } catch (error) {
-                alert("Error fetching song details: " + error.message);
-            } finally {
-                setLoading(false);
-            }
-        };
-        fetchSong();
-        fetchUserProfile();
-    }, [songId]);
+    // Function to get chord diagram image using Lorem Picsum
+    const getSongImage = (fileName) => {
+        const fileHash = fileName.split('').reduce((acc, char) => acc + char.charCodeAt(0), 0);
+        const imageId = (fileHash % 1000) + 1;
+        return `https://picsum.photos/200/150?random=${imageId}`;
+    };
 
     useEffect(() => {
         let scrollInterval;
@@ -87,7 +119,6 @@ const SongDetails = () => {
         };
     }, []);
 
-    if (loading) return <div className="text-gray-600 dark:text-gray-400">Loading...</div>;
     if (!song) return <div className="text-gray-600 dark:text-gray-400">Song not found.</div>;
 
     const renderLyrics = (lines) => (
@@ -114,7 +145,7 @@ const SongDetails = () => {
                                 song.chordDiagrams.map((chord, index) => (
                                     <img
                                         key={index}
-                                        src={`https://localhost:3000/${chord}`}
+                                        src={getSongImage(chord)}
                                         alt={`Chord Diagram ${index + 1}`}
                                         className={`rounded shadow-md ${
                                             song.chordDiagrams.length === 1
@@ -122,7 +153,12 @@ const SongDetails = () => {
                                                 : 'w-24 h-auto'
                                         }`}
                                         onError={(e) => {
-                                            e.target.src = "/assets/images/placeholder.png";
+                                            e.target.src = `data:image/svg+xml,${encodeURIComponent(
+                                                `<svg xmlns="http://www.w3.org/2000/svg" width="200" height="150" viewBox="0 0 200 150">
+                                                    <rect width="200" height="150" fill="#e5e7eb"/>
+                                                    <text x="100" y="75" text-anchor="middle" font-family="Arial, sans-serif" font-size="14" fill="#6b7280">Chord Diagram</text>
+                                                </svg>`
+                                            )}`;
                                         }}
                                     />
                                 ))
@@ -206,21 +242,12 @@ const SongDetails = () => {
                     </div>
                 </main>
                 <div className="absolute top-4 right-4 bg-white bg-opacity-60 backdrop-blur-lg dark:bg-gray-800 dark:bg-opacity-80 rounded-full p-2">
-                    {userProfile && userProfile.profilePicture ? (
-                        <img
-                            src={`https://localhost:3000/${userProfile.profilePicture}`}
-                            alt="Profile"
-                            className="w-16 h-16 rounded-full border border-gray-300 dark:border-gray-600 cursor-pointer"
-                            onClick={() => navigate("/profile")}
-                        />
-                    ) : (
-                        <img
-                            src="/profile.png"
-                            alt="Profile"
-                            className="w-16 h-16 rounded-full border border-gray-300 dark:border-gray-600 cursor-pointer"
-                            onClick={() => navigate("/profile")}
-                        />
-                    )}
+                    <img
+                        src={DUMMY_PROFILE.profilePicture}
+                        alt="Profile"
+                        className="w-16 h-16 rounded-full border border-gray-300 dark:border-gray-600 cursor-pointer"
+                        onClick={() => navigate("/profile")}
+                    />
                 </div>
             </div>
             <Footer />
