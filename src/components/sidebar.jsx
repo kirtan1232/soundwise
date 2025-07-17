@@ -15,8 +15,18 @@ const Sidebar = () => {
         const savedState = localStorage.getItem('sidebarCollapsed');
         return savedState ? JSON.parse(savedState) : false;
     });
-    // Remove backend role check for pure frontend
-    const [isAdmin, setIsAdmin] = useState(localStorage.getItem("role") === "admin");
+
+   // Default to dark mode if no theme is set
+   useEffect(() => {
+    const savedTheme = localStorage.getItem('theme');
+    if (!savedTheme) {
+        const prefersDarkMode = window.matchMedia("(prefers-color-scheme: dark)").matches;
+        localStorage.setItem('theme', prefersDarkMode ? 'dark' : 'light');
+        if (prefersDarkMode && theme !== 'dark') {
+            toggleTheme(); // Switch to dark mode
+        }
+    }
+}, [theme, toggleTheme]);
 
     useEffect(() => {
         localStorage.setItem('sidebarCollapsed', JSON.stringify(isCollapsed));
